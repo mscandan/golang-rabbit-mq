@@ -1,0 +1,59 @@
+version: '3.9'
+services:
+  consumer:
+    container_name: rabbit-mq-consumer
+    env_file:
+      - .env
+    environment:
+      - RABBIT_MQ_URL=${RABBIT_MQ_URL}
+      - PORT=${CONSUMER_PORT}
+    tty: true
+    build: ./consumer
+    ports:
+      - 8080:8080
+    restart: on-failure
+    volumes:
+      - .:/consumer
+    depends_on:
+      - rabbitmq
+    networks:
+      - learning
+
+  publisher:
+    container_name: rabbit-mq-publisher
+    env_file:
+      - .env
+    environment:
+      - RABBIT_MQ_URL=${RABBIT_MQ_URL}
+      - PORT=${PUBLISHER_PORT}
+    tty: true
+    build: ./publisher
+    ports:
+      - 8090:8090
+    restart: on-failure
+    volumes:
+      - .:/consumer
+    depends_on:
+      - rabbitmq
+    networks:
+      - learning
+
+  rabbitmq:
+    image: 'rabbitmq:latest'
+    networks:
+      - learning
+    volumes:
+      - ./rabbit-mq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    ports:
+      - 9099:9099
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 15s
+      retries: 5
+
+# Networks to be created to facilitate communication between containers
+networks:
+  learning:
+    driver: bridge
+
